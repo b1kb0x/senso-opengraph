@@ -229,9 +229,13 @@ final class OpenGraphManager
         ) {
             $shopId = wc_get_page_id('shop');
 
-            return $shopId > 0
-                ? get_permalink($shopId)
-                : '';
+            if ($shopId <= 0) {
+                return '';
+            }
+
+            $url = get_permalink($shopId);
+
+            return is_string($url) ? $url : '';
         }
 
         if (is_singular()) {
