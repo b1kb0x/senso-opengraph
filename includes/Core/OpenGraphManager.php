@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Senso\OpenGraph\Core;
 
+use WP_Term;
+
 if (!defined('ABSPATH')) {
     exit;
 }
