@@ -29,6 +29,10 @@ final class OpenGraphManager
      */
     private function collect(): array
     {
+        if (is_404() || is_search()) {
+            return [];
+        }
+
         $tags = [];
 
         $tags = $this->addLocale($tags);
@@ -157,6 +161,10 @@ final class OpenGraphManager
             return '';
         }
 
+        if (post_password_required($postId)) {
+            return '';
+        }
+
         $description = get_post_meta(
             $postId,
             '_senso_snippet_description',
@@ -220,6 +228,17 @@ final class OpenGraphManager
     {
         if (is_front_page()) {
             return home_url('/');
+        }
+
+        if (is_paged()) {
+
+            $url = get_pagenum_link(
+                (int) get_query_var('paged')
+            );
+
+            return is_string($url)
+                ? $url
+                : '';
         }
 
         if (
@@ -294,23 +313,71 @@ final class OpenGraphManager
      */
     private function getImage(): ?array
     {
-        if (!is_singular()) {
-            return null;
+        $postId = 0;
+
+        if (is_singular()) {
+            $postId = get_queried_object_id();
+
+            if (
+                $postId > 0 &&
+                post_password_required($postId)
+            ) {
+                return null;
+            }
         }
 
-        $attachmentId = get_post_thumbnail_id();
+        if (
+            function_exists('is_shop') &&
+            function_exists('wc_get_page_id') &&
+            is_shop()
+        ) {
+            $postId = wc_get_page_id('shop');
+        } elseif (is_tax('product_cat')) {
+
+            $term = get_queried_object();
+
+            if (!$term instanceof WP_Term) {
+                return null;
+            }
+
+            $attachmentId = (int) get_term_meta(
+                $term->term_id,
+                'thumbnail_id',
+                true
+            );
+
+            if ($attachmentId <= 0) {
+                return $this->buildDefaultImage();
+            }
+
+            return $this->buildImageData($attachmentId);
+        }
+
+        if ($postId <= 0) {
+            return $this->buildDefaultImage();
+        }
+
+        $attachmentId = get_post_thumbnail_id($postId);
 
         if ($attachmentId === 0) {
-            return null;
+            return $this->buildDefaultImage();
         }
 
+        return $this->buildImageData($attachmentId);
+    }
+
+    /**
+     * Build Open Graph image data.
+     */
+    private function buildImageData(int $attachmentId): ?array
+    {
         $image = wp_get_attachment_image_src(
             $attachmentId,
             'full'
         );
 
         if ($image === false) {
-            return null;
+            return $this->buildDefaultImage();
         }
 
         $alt = get_post_meta(
@@ -319,21 +386,47 @@ final class OpenGraphManager
             true
         );
 
-        if ($alt === '') {
+        if (
+            !is_string($alt) ||
+            $alt === ''
+        ) {
             $alt = wp_get_document_title();
         }
 
-        $url = $image[0];
+        return [
+            'url'    => $image[0],
+            'width'  => (int) $image[1],
+            'height' => (int) $image[2],
+            'alt'    => $alt,
+        ];
+    }
 
-        $width = (int) $image[1];
+    /**
+     * Build default Open Graph image.
+     */
+    private function buildDefaultImage(): ?array
+    {
+        $url = plugins_url(
+            PluginConfig::DEFAULT_IMAGE,
+            dirname(__DIR__, 2) . '/senso-opengraph.php'
+        );
 
-        $height = (int) $image[2];
+        $imageSize = @getimagesize(
+            ABSPATH . ltrim(
+                PluginConfig::DEFAULT_IMAGE,
+                '/'
+            )
+        );
 
         return [
             'url'    => $url,
-            'width'  => $width,
-            'height' => $height,
-            'alt'    => $alt,
+            'width'  => is_array($imageSize)
+                ? (int) $imageSize[0]
+                : 1200,
+            'height' => is_array($imageSize)
+                ? (int) $imageSize[1]
+                : 630,
+            'alt'    => get_bloginfo('name'),
         ];
     }
 
