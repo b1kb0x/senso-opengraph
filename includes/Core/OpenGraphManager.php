@@ -34,6 +34,7 @@ final class OpenGraphManager
         $tags = $this->addLocale($tags);
         $tags = $this->addType($tags);
         $tags = $this->addTitle($tags);
+        $tags = $this->addDescription($tags);
         $tags = $this->addUrl($tags);
         $tags = $this->addSiteName($tags);
         $tags = $this->addImage($tags);
@@ -96,7 +97,10 @@ final class OpenGraphManager
      */
     private function addType(array $tags): array
     {
-        if (is_product()) {
+        if (
+            function_exists('is_product') &&
+            is_product()
+        ) {
             $tags[] = [
                 'attribute' => 'property',
                 'name'      => 'og:type',
@@ -139,6 +143,57 @@ final class OpenGraphManager
     }
 
     /**
+     * Get Open Graph description.
+     */
+    private function getDescription(): string
+    {
+        if (!is_singular()) {
+            return '';
+        }
+
+        $postId = get_queried_object_id();
+
+        if ($postId <= 0) {
+            return '';
+        }
+
+        $description = get_post_meta(
+            $postId,
+            '_senso_snippet_description',
+            true
+        );
+
+        if (!is_string($description) || $description === '') {
+            return '';
+        }
+
+        return wp_strip_all_tags(trim($description));
+    }
+
+    /**
+     * Add Open Graph description.
+     *
+     * @param array<int, array<string, string>> $tags
+     * @return array<int, array<string, string>>
+     */
+    private function addDescription(array $tags): array
+    {
+        $description = $this->getDescription();
+
+        if ($description === '') {
+            return $tags;
+        }
+
+        $tags[] = [
+            'attribute' => 'property',
+            'name'      => 'og:description',
+            'content'   => $description,
+        ];
+
+        return $tags;
+    }
+
+    /**
      * Add Open Graph URL.
      *
      * @param array<int, array<string, string>> $tags
@@ -167,7 +222,11 @@ final class OpenGraphManager
             return home_url('/');
         }
 
-        if (is_shop()) {
+        if (
+            function_exists('is_shop') &&
+            function_exists('wc_get_page_id') &&
+            is_shop()
+        ) {
             $shopId = wc_get_page_id('shop');
 
             return $shopId > 0
