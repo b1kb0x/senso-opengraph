@@ -30,6 +30,7 @@ final class OpenGraphManager
         $tags = [];
 
         $tags = $this->addLocale($tags);
+        $tags = $this->addType($tags);
 
         return apply_filters(
             'senso_opengraph_tags',
@@ -76,6 +77,33 @@ final class OpenGraphManager
             'attribute' => 'property',
             'name'      => 'og:locale',
             'content'   => $locale,
+        ];
+
+        return $tags;
+    }
+
+    /**
+     * Add Open Graph type.
+     *
+     * @param array<int, array<string, string>> $tags
+     * @return array<int, array<string, string>>
+     */
+    private function addType(array $tags): array
+    {
+        if (is_product()) {
+            $tags[] = [
+                'attribute' => 'property',
+                'name'      => 'og:type',
+                'content'   => 'product',
+            ];
+
+            return $tags;
+        }
+
+        $tags[] = [
+            'attribute' => 'property',
+            'name'      => 'og:type',
+            'content'   => 'website',
         ];
 
         return $tags;
