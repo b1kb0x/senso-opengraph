@@ -226,9 +226,6 @@ final class OpenGraphManager
 
     private function getUrl(): string
     {
-        if (is_front_page()) {
-            return home_url('/');
-        }
 
         if (is_paged()) {
 
@@ -239,6 +236,10 @@ final class OpenGraphManager
             return is_string($url)
                 ? $url
                 : '';
+        }
+
+        if (is_front_page()) {
+            return home_url('/');
         }
 
         if (
@@ -406,16 +407,12 @@ final class OpenGraphManager
      */
     private function buildDefaultImage(): ?array
     {
-        $url = plugins_url(
-            PluginConfig::DEFAULT_IMAGE,
-            dirname(__DIR__, 2) . '/senso-opengraph.php'
-        );
+        $url = SENSO_OPENGRAPH_URL .
+            PluginConfig::DEFAULT_IMAGE;
 
         $imageSize = @getimagesize(
-            ABSPATH . ltrim(
-                PluginConfig::DEFAULT_IMAGE,
-                '/'
-            )
+            SENSO_OPENGRAPH_PATH .
+            PluginConfig::DEFAULT_IMAGE
         );
 
         return [

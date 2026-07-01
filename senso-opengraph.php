@@ -22,8 +22,17 @@ if (!defined('ABSPATH')) {
 */
 
 define('SENSO_OPENGRAPH_VERSION', '0.1.0');
-define('SENSO_OPENGRAPH_PATH', plugin_dir_path(__FILE__));
-define('SENSO_OPENGRAPH_URL', plugin_dir_url(__FILE__));
+
+define(
+    'SENSO_OPENGRAPH_PATH',
+    plugin_dir_path(__FILE__)
+);
+
+define(
+    'SENSO_OPENGRAPH_URL',
+    plugin_dir_url(__FILE__)
+);
+
 
 /*
 |--------------------------------------------------------------------------
